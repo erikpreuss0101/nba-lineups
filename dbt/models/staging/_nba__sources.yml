@@ -1,0 +1,25 @@
+version: 2
+
+sources:
+  - name: nba
+    description: >
+      Raw NBA feeds landed by ingest/nba_ingest.py as parquet, one file per game,
+      partitioned by season. Read in place by DuckDB; nothing is loaded.
+    meta:
+      external_location: >-
+        read_parquet('../data/raw/{name}/*/*.parquet',
+                     hive_partitioning = true, union_by_name = true)
+    loaded_at_field: "cast(ingested_at as timestamptz)"
+    tables:
+      - name: schedule
+        description: Current-season league schedule (cdn.nba.com scheduleLeagueV2), one row per game.
+      - name: games
+        description: Game header from the live box score feed, one row per finished game.
+      - name: box_teams
+        description: Team box score, one row per team per game.
+      - name: box_players
+        description: Player box score, one row per rostered player per game (including inactive).
+      - name: pbp_actions
+        description: Play-by-play actions from the live feed, one row per action.
+        freshness:
+          warn_after: {count: 3, period: day}

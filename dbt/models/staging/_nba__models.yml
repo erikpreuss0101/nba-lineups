@@ -1,0 +1,73 @@
+version: 2
+
+models:
+  - name: stg_nba__games
+    description: One row per finished game, from the live box score header.
+    columns:
+      - name: game_id
+        data_tests: [unique, not_null]
+      - name: season_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [preseason, regular_season, playoffs, play_in, nba_cup_final, other]
+      - name: home_team_id
+        data_tests: [not_null]
+      - name: away_team_id
+        data_tests: [not_null]
+
+  - name: stg_nba__box_teams
+    description: One row per team per game.
+    columns:
+      - name: box_team_key
+        data_tests: [unique, not_null]
+      - name: game_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_nba__games')
+                field: game_id
+
+  - name: stg_nba__box_players
+    description: One row per rostered player per game, including players who did not play.
+    columns:
+      - name: box_player_key
+        data_tests: [unique, not_null]
+      - name: game_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_nba__games')
+                field: game_id
+      - name: seconds_played
+        description: Parsed from the ISO-8601 minutes string, e.g. PT34M12.00S -> 2052.
+
+  - name: stg_nba__pbp_actions
+    description: >
+      One row per play-by-play action. Substitutions are action_type = 'substitution'
+      with sub_type 'in' or 'out'; these drive stint reconstruction downstream.
+    columns:
+      - name: pbp_action_key
+        data_tests: [unique, not_null]
+      - name: game_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_nba__games')
+                field: game_id
+      - name: game_seconds_elapsed
+        description: Seconds since tip-off, counting 720 per quarter and 300 per overtime.
+        data_tests: [not_null]
+
+  - name: stg_nba__schedule
+    description: Current-season schedule, one row per game including games not yet played.
+    columns:
+      - name: game_id
+        data_tests: [unique, not_null]
+      - name: game_status
+        description: 1 = scheduled, 2 = in progress, 3 = final.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3]
+                quote: false

@@ -1,0 +1,9 @@
+# Lives in the repo so `dbt build` works with no setup.
+# Run dbt from the dbt/ folder; the database file is created there.
+nba_lineups:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: nba.duckdb
+      threads: 4
